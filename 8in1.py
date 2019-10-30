@@ -3,18 +3,32 @@
 
 import PyPDF2
 import sys
+import argparse
 
-input_fn = sys.argv[1]
-output_fn = sys.argv[2]
+# input_fn = sys.argv[1]
+# output_fn = sys.argv[2]
 crop_width_rate = 1
-crop_height_rate = 0.97
+crop_height_rate = 1
 
 if __name__ == u'__main__':
+
+  parser = argparse.ArgumentParser(add_help=True)
+  group = parser.add_argument_group("global optional arguments")
+  group.add_argument('input', action='store', help="input pdf")
+  group.add_argument('output', action='store', help="output pdf")
+  group.add_argument('-b', "--begin", dest="page_begin", action='store', type=int, default=1 ,help="beginning page. start with 1")
+  group.add_argument('-e', "--end", dest="page_begin", action='store', type=int, default=0, help="end page including. 0 means the last page")
+  args = parser.parse_args()
+  input_fn = args.input
+  output_fn = args.output
+  page_begin = args.page_begin
+  page_end = args.page_end
+
   pdf_file = open(input_fn, 'rb')
   pdf_reader = PyPDF2.PdfFileReader(pdf_file)
 
-  page_begin = 1
-  page_end = pdf_reader.getNumPages()
+  if page_end == 0:
+    page_end = pdf_reader.getNumPages()
 
   num_pages = page_end - page_begin + 1
   width_max = 0
