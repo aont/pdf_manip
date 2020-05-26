@@ -42,7 +42,10 @@ if __name__ == u'__main__':
     page_n_tr = PyPDF2.pdf.PageObject.createBlankPage(width=width_n, height=height_n)
     page_n_tr.mergeTranslatedPage(page_n_orig, -mbox_n.getLowerLeft_x(), -mbox_n.getLowerLeft_y(), expand=False)
     page_n_rot = PyPDF2.pdf.PageObject.createBlankPage(width=0, height=0)
-    page_n_rot.mergeRotatedPage(page_n_tr, -rotate, expand=True)
+    if rotate:
+      page_n_rot.mergeRotatedPage(page_n_tr, -rotate, expand=True)
+    else:
+      page_n_rot = page_n_tr
     page_n = page_n_rot
 
     mbox_n = page_n.mediaBox
