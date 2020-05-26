@@ -5,8 +5,6 @@ import PyPDF2
 import sys
 import argparse
 
-# input_fn = sys.argv[1]
-# output_fn = sys.argv[2]
 crop_width_rate = 1
 crop_height_rate = 1
 
@@ -17,7 +15,7 @@ if __name__ == u'__main__':
   group.add_argument('input', action='store', help="input pdf")
   group.add_argument('output', action='store', help="output pdf")
   group.add_argument('-b', "--begin", dest="page_begin", action='store', type=int, default=1 ,help="beginning page. start with 1")
-  group.add_argument('-e', "--end", dest="page_begin", action='store', type=int, default=0, help="end page including. 0 means the last page")
+  group.add_argument('-e', "--end", dest="page_end", action='store', type=int, default=0, help="end page including. 0 means the last page")
   args = parser.parse_args()
   input_fn = args.input
   output_fn = args.output
@@ -36,12 +34,23 @@ if __name__ == u'__main__':
   pages = []
   sys.stderr.write("[info] reading pages\n")
   for page_num in range(page_begin-1, page_end):
-    page_n = pdf_reader.getPage(page_num)
+    page_n_orig = pdf_reader.getPage(page_num)
+    rotate = page_n_orig.get('/Rotate')
+    mbox_n = page_n_orig.mediaBox
+    width_n = float(page_n_orig.mediaBox.getWidth())
+    height_n = float(page_n_orig.mediaBox.getHeight())
+    page_n_tr = PyPDF2.pdf.PageObject.createBlankPage(width=width_n, height=height_n)
+    page_n_tr.mergeTranslatedPage(page_n_orig, -mbox_n.getLowerLeft_x(), -mbox_n.getLowerLeft_y(), expand=False)
+    page_n_rot = PyPDF2.pdf.PageObject.createBlankPage(width=0, height=0)
+    page_n_rot.mergeRotatedPage(page_n_tr, -rotate, expand=True)
+    page_n = page_n_rot
+
     mbox_n = page_n.mediaBox
     center_x = ( float(mbox_n.getLowerLeft_x()) + float(mbox_n.getUpperRight_x()) ) *0.5
     center_y = ( float(mbox_n.getUpperRight_y()) + float(mbox_n.getLowerLeft_y()) ) *0.5
     width_n = float(page_n.mediaBox.getWidth())
     height_n = float(page_n.mediaBox.getHeight())
+
     mbox_n.setLowerLeft((center_x - width_n * crop_width_rate * 0.5, center_y - height_n * crop_height_rate * 0.5))
     mbox_n.setUpperRight((center_x + width_n * crop_width_rate * 0.5, center_y + height_n * crop_height_rate * 0.5))
     page_n.mediaBox = mbox_n
@@ -52,7 +61,7 @@ if __name__ == u'__main__':
     if height_max < height_n:
       height_max = height_n
     pages.append(page_n)
-  
+
   if 0!=(num_pages&7):
     for i in range(7):
       pages.append(PyPDF2.pdf.PageObject.createBlankPage(width=width_max, height=height_max))
@@ -65,7 +74,7 @@ if __name__ == u'__main__':
   pages_8in1 = []
   for page_num_8in1 in range(num_pages_8in1):
     pages_8in1.append(PyPDF2.pdf.PageObject.createBlankPage(width=width_max*4, height=height_max*2))
-  
+
   for page_num in range(num_pages):
     page_num_8in1 = page_num>>3
     pos_num = page_num&7
@@ -81,5 +90,5 @@ if __name__ == u'__main__':
   pdf_output_file = open(output_fn, "wb")
   pdf_writer.write(pdf_output_file)
   pdf_output_file.close()
-  
+
   pdf_file.close()
